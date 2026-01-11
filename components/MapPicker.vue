@@ -157,7 +157,7 @@ const initFullscreenMap = async () => {
   });
 
   // 如果有初始坐标，设置地图中心和标记
-  let center = [116.4074, 39.9042]; // 默认北京
+  let center = [108.947587, 34.269439]; // 默认西安
   let zoom = 10;
   
   if (coordinates.value) {

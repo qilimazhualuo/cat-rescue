@@ -1,9 +1,7 @@
-import { updateCat } from '~/server/utils/db';
+import { updateCat, getCatById } from '~/server/utils/db';
 import type { Cat } from '~/server/utils/db';
 import { readMultipartFormData } from 'h3';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
+import { getAuthUser } from '~/server/utils/auth';
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id');
@@ -13,6 +11,26 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       message: '缺少ID参数'
     });
+  }
+
+  // 检查权限：非管理员只能编辑自己单位的猫咪
+  const user = await getAuthUser(event);
+  
+  if (user.role_name !== 'admin') {
+    // 非管理员需要检查猫咪是否属于自己的单位
+    const cat = await getCatById(parseInt(id));
+    if (!cat) {
+      throw createError({
+        statusCode: 404,
+        message: '未找到该猫咪信息'
+      });
+    }
+    if (cat.unit_id !== user.unit_id) {
+      throw createError({
+        statusCode: 403,
+        message: '无权编辑该猫咪信息'
+      });
+    }
   }
 
   // 读取 FormData
@@ -46,32 +64,56 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // 处理照片上传
-  let photoUrl = data.photo_url || '';
+  // 处理照片，直接存储到 cats 表
+  let photoData: Buffer | undefined;
+  let photoMimeType: string | undefined;
   if (photoFile) {
-    const uploadsDir = join(process.cwd(), 'data', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
+    // 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(photoFile.type || '')) {
+      throw createError({
+        statusCode: 400,
+        message: '照片只支持图片格式：jpg, png, gif, webp'
+      });
+    }
     
-    const ext = photoFile.filename?.split('.').pop() || 'jpg';
-    const filename = `${randomUUID()}.${ext}`;
-    const filePath = join(uploadsDir, filename);
+    // 验证文件大小（最大 5MB）
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (photoFile.data.length > maxSize) {
+      throw createError({
+        statusCode: 400,
+        message: '照片大小不能超过 5MB'
+      });
+    }
     
-    await writeFile(filePath, photoFile.data);
-    photoUrl = `/api/uploads/${filename}`;
+    photoData = photoFile.data;
+    photoMimeType = photoFile.type || 'image/jpeg';
   }
 
-  // 处理免疫证明上传
-  let vaccinationProofUrl = data.vaccination_proof_url || '';
+  // 处理免疫证明，直接存储到 cats 表
+  let vaccinationProofData: Buffer | undefined;
+  let vaccinationProofMimeType: string | undefined;
   if (vaccinationProofFile) {
-    const uploadsDir = join(process.cwd(), 'data', 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
+    // 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(vaccinationProofFile.type || '')) {
+      throw createError({
+        statusCode: 400,
+        message: '免疫证明只支持图片格式：jpg, png, gif, webp'
+      });
+    }
     
-    const ext = vaccinationProofFile.filename?.split('.').pop() || 'jpg';
-    const filename = `${randomUUID()}.${ext}`;
-    const filePath = join(uploadsDir, filename);
+    // 验证文件大小（最大 5MB）
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (vaccinationProofFile.data.length > maxSize) {
+      throw createError({
+        statusCode: 400,
+        message: '免疫证明大小不能超过 5MB'
+      });
+    }
     
-    await writeFile(filePath, vaccinationProofFile.data);
-    vaccinationProofUrl = `/api/uploads/${filename}`;
+    vaccinationProofData = vaccinationProofFile.data;
+    vaccinationProofMimeType = vaccinationProofFile.type || 'image/jpeg';
   }
   
   // 验证救助过程字数（如果提供了）
@@ -82,17 +124,15 @@ export default defineEventHandler(async (event) => {
     });
   }
   
-  const updates: Partial<Cat> = {};
+  const updates: any = {};
   
   if (data.category !== undefined) updates.category = data.category;
   if (data.name !== undefined) updates.name = data.name;
   if (data.gender !== undefined) updates.gender = data.gender;
   if (data.age_months !== undefined) updates.age_months = data.age_months;
   if (data.is_vaccinated !== undefined) updates.is_vaccinated = data.is_vaccinated ? 1 : 0;
-  if (vaccinationProofUrl) updates.vaccination_proof = vaccinationProofUrl;
   if (data.is_dewormed !== undefined) updates.is_dewormed = data.is_dewormed ? 1 : 0;
   if (data.is_neutered !== undefined) updates.is_neutered = data.is_neutered ? 1 : 0;
-  if (photoUrl) updates.photo = photoUrl;
   if (data.rescuer_name !== undefined) updates.rescuer_name = data.rescuer_name;
   if (data.phone !== undefined) updates.phone = data.phone;
   if (data.rescue_date !== undefined) updates.rescue_date = data.rescue_date;
@@ -108,7 +148,17 @@ export default defineEventHandler(async (event) => {
   if (data.adopter_address !== undefined) updates.adopter_address = data.adopter_address;
   if (data.adopter_location !== undefined) updates.adopter_location = data.adopter_location;
   
-  const updated = updateCat(parseInt(id), updates);
+  // 图片数据
+  if (photoData) {
+    updates.photo_data = photoData;
+    updates.photo_mime_type = photoMimeType;
+  }
+  if (vaccinationProofData) {
+    updates.vaccination_proof_data = vaccinationProofData;
+    updates.vaccination_proof_mime_type = vaccinationProofMimeType;
+  }
+  
+  const updated = await updateCat(parseInt(id), updates);
   
   if (!updated) {
     throw createError({

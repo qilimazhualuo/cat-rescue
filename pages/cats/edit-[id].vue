@@ -1,7 +1,5 @@
 <template>
   <div class="container mx-auto px-4 py-8 max-w-4xl">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">编辑猫咪信息</h1>
-
     <div v-if="loading" class="text-center py-12">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <p class="mt-2 text-gray-600">加载中...</p>
@@ -249,65 +247,6 @@
         </div>
       </div>
 
-      <!-- 领养信息 -->
-      <div class="border-t pt-6">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">领养信息</h2>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">领养状态 *</label>
-            <select
-              v-model="form.adoption_status"
-              required
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">请选择</option>
-              <option value="未领养">未领养</option>
-              <option value="审核中">审核中</option>
-              <option value="已领养">已领养</option>
-            </select>
-          </div>
-
-          <div v-if="form.adoption_status && form.adoption_status !== '未领养'">
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">领养人信息</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">领养人姓名 *</label>
-                <input
-                  v-model="form.adopter_name"
-                  type="text"
-                  required
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">领养人电话 *</label>
-                <input
-                  v-model="form.adopter_phone"
-                  type="tel"
-                  required
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">家庭住址 *</label>
-                <input
-                  v-model="form.adopter_address"
-                  type="text"
-                  required
-                  class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div class="md:col-span-2">
-                <MapPicker v-model="form.adopter_location" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- 提交按钮 -->
       <div class="flex gap-4 pt-4">
         <button
@@ -330,7 +269,8 @@
 
 <script setup lang="ts">
 definePageMeta({
-  key: (route) => `cat-edit-${route.params.id}`
+  key: (route) => `cat-edit-${route.params.id}`,
+  middleware: 'auth'
 });
 
 const route = useRoute();
@@ -366,17 +306,11 @@ const form = ref({
   rescue_process: '',
   is_placed: false,
   adoption_location: '',
-  current_status: '',
-  // 领养信息
-  adoption_status: '未领养',
-  adopter_name: '',
-  adopter_phone: '',
-  adopter_address: '',
-  adopter_location: ''
+  current_status: ''
 });
 
 const isFormValid = computed(() => {
-  const basicValid = (
+  return (
     form.value.category &&
     form.value.name &&
     form.value.gender &&
@@ -386,19 +320,8 @@ const isFormValid = computed(() => {
     form.value.rescue_date &&
     form.value.rescue_location &&
     form.value.rescue_process.length >= 20 &&
-    form.value.rescue_process.length <= 200 &&
-    form.value.adoption_status
+    form.value.rescue_process.length <= 200
   );
-  
-  // 如果领养状态不是"未领养"，需要验证领养人信息
-  if (form.value.adoption_status && form.value.adoption_status !== '未领养') {
-    return basicValid && 
-           form.value.adopter_name && 
-           form.value.adopter_phone && 
-           form.value.adopter_address;
-  }
-  
-  return basicValid;
 });
 
 const loadCat = async () => {
@@ -429,13 +352,7 @@ const loadCat = async () => {
       rescue_process: cat.rescue_process,
       is_placed: cat.is_placed === 1,
       adoption_location: cat.adoption_location || '',
-      current_status: cat.current_status || '',
-      // 领养信息
-      adoption_status: cat.adoption_status || '未领养',
-      adopter_name: cat.adopter_name || '',
-      adopter_phone: cat.adopter_phone || '',
-      adopter_address: cat.adopter_address || '',
-      adopter_location: cat.adopter_location || ''
+      current_status: cat.current_status || ''
     };
   } catch (error: any) {
     if (error.statusCode === 404) {
@@ -498,13 +415,7 @@ const removeVaccinationProof = () => {
 
 const submitForm = async () => {
   if (!isFormValid.value) {
-    let errorMsg = '请填写所有必填字段，并确保救助过程描述在20-200字之间';
-    if (form.value.adoption_status && form.value.adoption_status !== '未领养') {
-      if (!form.value.adopter_name || !form.value.adopter_phone || !form.value.adopter_address) {
-        errorMsg = '请填写完整的领养人信息（姓名、电话、家庭住址）';
-      }
-    }
-    alert(errorMsg);
+    alert('请填写所有必填字段，并确保救助过程描述在20-200字之间');
     return;
   }
 
@@ -532,23 +443,6 @@ const submitForm = async () => {
     }
     if (form.value.current_status) {
       formData.append('current_status', form.value.current_status);
-    }
-    
-    // 领养信息
-    formData.append('adoption_status', form.value.adoption_status || '未领养');
-    if (form.value.adoption_status && form.value.adoption_status !== '未领养') {
-      if (form.value.adopter_name) {
-        formData.append('adopter_name', form.value.adopter_name);
-      }
-      if (form.value.adopter_phone) {
-        formData.append('adopter_phone', form.value.adopter_phone);
-      }
-      if (form.value.adopter_address) {
-        formData.append('adopter_address', form.value.adopter_address);
-      }
-      if (form.value.adopter_location) {
-        formData.append('adopter_location', form.value.adopter_location);
-      }
     }
     
     // 如果有新选择的照片文件，添加它

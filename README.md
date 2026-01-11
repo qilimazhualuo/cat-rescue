@@ -1,6 +1,6 @@
 # 猫咪救助信息管理系统
 
-这是一个基于 Nuxt 3 的猫咪救助信息管理系统，使用 SQLite 数据库存储数据。
+这是一个基于 Nuxt 3 的猫咪救助信息管理系统，使用 PostgreSQL 数据库存储数据，图片也存储在数据库中。
 
 ## 功能特性
 
@@ -9,7 +9,8 @@
 - ✅ 搜索和筛选功能
 - ✅ 分页显示
 - ✅ 响应式设计
-- ✅ SQLite 数据库存储
+- ✅ PostgreSQL 数据库存储
+- ✅ 图片存储在数据库中
 
 ## 字段说明
 
@@ -142,9 +143,38 @@ pm2 start ecosystem.config.js
 
 ## 数据库
 
-数据库文件会自动创建在 `./data/cats.db`（可在 `nuxt.config.ts` 中配置）。
+项目使用 PostgreSQL 数据库存储数据，图片也存储在数据库中。
 
-首次运行时会自动创建表结构。
+### 数据库配置
+
+1. 确保已安装并运行 PostgreSQL 数据库
+2. 创建数据库：
+```bash
+sudo -u postgres psql -c "CREATE DATABASE cat_rescue;"
+```
+3. 初始化表结构（已自动创建，如需手动执行）：
+```bash
+sudo -u postgres psql -d cat_rescue -f server/utils/init-db.sql
+```
+
+### 环境变量配置
+
+可以通过环境变量配置数据库连接（可选）：
+
+```bash
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=cat_rescue
+DB_USER=postgres
+DB_PASSWORD=your_password
+```
+
+默认配置（无需密码）：
+- 主机: localhost
+- 端口: 5432
+- 数据库: cat_rescue
+- 用户: postgres
+- 密码: （空）
 
 ## 项目结构
 
@@ -189,21 +219,23 @@ cat-rescue/
 ## 技术栈
 
 - **Nuxt 3**: Vue.js 全栈框架
-- **SQLite**: 轻量级数据库（better-sqlite3）
+- **PostgreSQL**: 关系型数据库（pg）
 - **Tailwind CSS**: 实用优先的 CSS 框架
 
 ## 注意事项
 
-1. 数据库文件会自动创建，无需手动初始化
-2. 救助过程描述必须在 20-200 字之间
-3. 照片字段支持 URL 格式，可以链接到外部图片
-4. 所有必填字段都有前端和后端验证
+1. 需要先安装并配置 PostgreSQL 数据库
+2. 数据库表结构会在首次运行时自动创建（通过 init-db.sql）
+3. 救助过程描述必须在 20-200 字之间
+4. 图片直接存储在数据库中（BYTEA 类型），最大 5MB
+5. 所有必填字段都有前端和后端验证
 
 ## 开发说明
 
-- 修改数据库路径：在 `nuxt.config.ts` 中设置 `runtimeConfig.dbPath`
-- 添加新字段：需要同时修改数据库表结构（`server/utils/db.ts`）和前端表单
+- 修改数据库配置：在 `nuxt.config.ts` 中设置 `runtimeConfig.db` 或使用环境变量
+- 添加新字段：需要同时修改数据库表结构（`server/utils/init-db.sql` 和 `server/utils/db.ts`）和前端表单
 - 自定义样式：修改 `assets/css/main.css` 或使用 Tailwind 类
+- 数据库迁移：修改表结构后需要手动执行 SQL 或使用迁移工具
 
 ## 许可证
 

@@ -1,0 +1,24 @@
+[Unit]
+Description=猫咪救助信息管理系统
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=zb
+WorkingDirectory=/home/zb/cat-rescue
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+ExecStart=/usr/bin/node /home/zb/cat-rescue/.output/server/index.mjs
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cat-rescue
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

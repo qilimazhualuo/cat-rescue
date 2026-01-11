@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     });
   }
   
-  const cat = getCatById(parseInt(id));
+  const cat = await getCatById(parseInt(id));
   
   if (!cat) {
     throw createError({

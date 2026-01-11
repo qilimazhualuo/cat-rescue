@@ -1,12 +1,32 @@
 <template>
   <div class="container mx-auto px-4 py-8 max-w-4xl">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">添加新猫咪信息</h1>
-
     <form @submit.prevent="submitForm" class="bg-white rounded-lg shadow-md p-6 space-y-6">
       <!-- 基本信息 -->
       <div class="border-b pb-6">
         <h2 class="text-xl font-semibold text-gray-700 mb-4">基本信息</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">所属单位 *</label>
+            <select
+              v-if="isAdmin"
+              v-model="form.unit_id"
+              required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option :value="undefined">请选择单位</option>
+              <option v-for="unit in units" :key="unit.id" :value="unit.id">
+                {{ unit.name }}
+              </option>
+            </select>
+            <input
+              v-else
+              :value="currentUserUnitName"
+              type="text"
+              readonly
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100 cursor-not-allowed"
+            />
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">宠物类别 *</label>
             <select
@@ -265,7 +285,40 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: 'auth'
+});
+
+interface Unit {
+  id?: number;
+  name: string;
+}
+
+// 使用 useFetch 实现服务器端渲染 - 单位列表
+const { data: unitsResponse } = await useFetch<{ data: Unit[] }>('/api/units', {
+  query: {
+    pageSize: 1000,
+    status: 'active'
+  },
+  default: () => ({ data: [] })
+});
+const units = computed(() => unitsResponse.value?.data || []);
+
+// 获取当前用户信息（服务端渲染）
+const { data: currentUser } = await useFetch('/api/auth/me', {
+  default: () => null
+});
+
+const isAdmin = computed(() => {
+  return currentUser.value?.role_name === 'admin';
+});
+
+const currentUserUnitName = computed(() => {
+  return currentUser.value?.unit_name || '未知单位';
+});
+
 const form = ref({
+  unit_id: undefined as number | undefined,
   category: '',
   name: '',
   gender: '',
@@ -283,6 +336,13 @@ const form = ref({
   is_placed: false,
   adoption_location: '',
   current_status: ''
+});
+
+// 初始化单位ID：普通用户使用自己的单位，管理员可以后续选择
+watchEffect(() => {
+  if (!isAdmin.value && currentUser.value?.unit_id && !form.value.unit_id) {
+    form.value.unit_id = currentUser.value.unit_id;
+  }
 });
 
 const submitting = ref(false);
@@ -340,6 +400,7 @@ const removeVaccinationProof = () => {
 
 const isFormValid = computed(() => {
   return (
+    form.value.unit_id !== undefined &&
     form.value.category &&
     form.value.name &&
     form.value.gender &&
@@ -365,6 +426,9 @@ const submitForm = async () => {
     const formData = new FormData();
     
     // 添加所有表单字段
+    if (form.value.unit_id !== undefined) {
+      formData.append('unit_id', String(form.value.unit_id));
+    }
     formData.append('category', form.value.category);
     formData.append('name', form.value.name);
     formData.append('gender', form.value.gender);

@@ -102,53 +102,90 @@
           </div>
         </div>
 
-        <!-- 领养信息 -->
+        <!-- 领养申请 -->
         <div class="mb-6">
-          <h2 class="text-xl font-semibold text-gray-700 mb-4">领养信息</h2>
-          <div class="space-y-3">
-            <div>
-              <span class="text-sm font-medium text-gray-500">领养状态：</span>
-              <span class="text-gray-800 font-semibold">
-                <span v-if="cat.adoption_status === '已领养'" class="text-green-600">已领养</span>
-                <span v-else-if="cat.adoption_status === '审核中'" class="text-yellow-600">审核中</span>
-                <span v-else class="text-gray-600">未领养</span>
-              </span>
-            </div>
-            
-            <div v-if="cat.adoption_status && cat.adoption_status !== '未领养'" class="bg-gray-50 p-4 rounded-lg space-y-2">
-              <h3 class="text-lg font-semibold text-gray-700 mb-3">领养人信息</h3>
-              <div v-if="cat.adopter_name">
-                <span class="text-sm font-medium text-gray-500">姓名：</span>
-                <span class="text-gray-800">{{ cat.adopter_name }}</span>
+          <h2 class="text-xl font-semibold text-gray-700 mb-4">领养申请</h2>
+          
+          <div v-if="applicationsLoading" class="text-center py-4">
+            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600 text-sm">加载中...</p>
+          </div>
+          
+          <div v-else-if="applications.length > 0" class="space-y-3">
+            <div
+              v-for="app in applications"
+              :key="app.id"
+              class="bg-gray-50 p-4 rounded-lg border border-gray-200"
+            >
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-800">{{ app.applicant_name }}</h3>
+                  <p class="text-sm text-gray-600">{{ app.applicant_phone }}</p>
+                </div>
+                <span
+                  :class="[
+                    'px-2 py-1 rounded text-xs font-semibold',
+                    app.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    app.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                    app.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  ]"
+                >
+                  {{ getStatusText(app.status) }}
+                </span>
               </div>
-              <div v-if="cat.adopter_phone">
-                <span class="text-sm font-medium text-gray-500">电话：</span>
-                <span class="text-gray-800">{{ cat.adopter_phone }}</span>
-              </div>
-              <div v-if="cat.adopter_address">
-                <span class="text-sm font-medium text-gray-500">家庭住址：</span>
-                <span class="text-gray-800">{{ cat.adopter_address }}</span>
-              </div>
-              <div v-if="cat.adopter_location">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <span class="text-sm font-medium text-gray-500">位置坐标：</span>
-                    <span class="text-gray-800 font-mono text-sm">{{ cat.adopter_location }}</span>
-                  </div>
-                  <button
-                    @click="openGaodeNavigation"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-medium"
-                  >
-                    导航到该位置
-                  </button>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
+                <div v-if="app.applicant_id_card">
+                  <span class="font-medium">身份证：</span>{{ app.applicant_id_card }}
+                </div>
+                <div v-if="app.applicant_email">
+                  <span class="font-medium">邮箱：</span>{{ app.applicant_email }}
+                </div>
+                <div v-if="app.applicant_address" class="md:col-span-2">
+                  <span class="font-medium">地址：</span>{{ app.applicant_address }}
+                </div>
+                <div v-if="app.application_reason" class="md:col-span-2">
+                  <span class="font-medium">申请理由：</span>{{ app.application_reason }}
+                </div>
+                <div class="md:col-span-2 text-xs text-gray-500">
+                  申请时间：{{ formatDate(app.created_at) }}
                 </div>
               </div>
+              
+              <div v-if="user" class="flex gap-2 mt-3">
+                <button
+                  v-if="app.status === 'pending'"
+                  @click="updateApplicationStatus(app.id!, 'approved')"
+                  class="bg-green-600 hover:bg-green-700 text-white text-xs py-1 px-3 rounded transition"
+                >
+                  通过
+                </button>
+                <button
+                  v-if="app.status === 'pending'"
+                  @click="updateApplicationStatus(app.id!, 'rejected')"
+                  class="bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-3 rounded transition"
+                >
+                  拒绝
+                </button>
+                <button
+                  v-if="app.status === 'approved'"
+                  @click="updateApplicationStatus(app.id!, 'completed')"
+                  class="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-3 rounded transition"
+                >
+                  完成领养
+                </button>
+              </div>
             </div>
+          </div>
+          
+          <div v-else class="text-center py-8 bg-gray-50 rounded-lg">
+            <p class="text-gray-500">暂无领养申请</p>
           </div>
         </div>
 
         <!-- 操作按钮 -->
-        <div class="flex gap-4 pt-4 border-t">
+        <div v-if="user" class="flex gap-4 pt-4 border-t">
           <button
             @click="goToEdit"
             class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition"
@@ -168,6 +205,20 @@
             返回列表
           </NuxtLink>
         </div>
+        <div v-else class="flex gap-4 pt-4 border-t">
+          <NuxtLink
+            :to="`/adoption-apply/${cat.id}`"
+            class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition text-center"
+          >
+            我要领养
+          </NuxtLink>
+          <NuxtLink
+            to="/"
+            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition text-center"
+          >
+            返回列表
+          </NuxtLink>
+        </div>
       </div>
     </div>
 
@@ -175,6 +226,7 @@
       <p class="text-gray-500 text-lg">未找到该猫咪信息</p>
       <NuxtLink to="/" class="text-blue-600 hover:underline mt-4 inline-block">返回列表</NuxtLink>
     </div>
+
   </div>
 </template>
 
@@ -216,6 +268,29 @@ const id = computed(() => {
 
 const loading = ref(true);
 const cat = ref<any>(null);
+const applications = ref<any[]>([]);
+const applicationsLoading = ref(false);
+const user = ref<any>(null);
+
+const loadUser = async () => {
+  try {
+    user.value = await $fetch('/api/auth/me');
+  } catch (error) {
+    user.value = null;
+  }
+};
+
+const loadApplications = async () => {
+  if (!cat.value?.id) return;
+  applicationsLoading.value = true;
+  try {
+    applications.value = await $fetch(`/api/cats/${cat.value.id}/applications`);
+  } catch (error) {
+    console.error('加载领养申请失败:', error);
+  } finally {
+    applicationsLoading.value = false;
+  }
+};
 
 const loadCat = async () => {
   // 如果路径包含 /edit，说明应该显示编辑页面，这里不加载数据
@@ -227,6 +302,7 @@ const loadCat = async () => {
   loading.value = true;
   try {
     cat.value = await $fetch(`/api/cats/${id.value}`);
+    await loadApplications();
   } catch (error: any) {
     if (error.statusCode === 404) {
       cat.value = null;
@@ -236,6 +312,56 @@ const loadCat = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const updateApplicationStatus = async (id: number, status: string) => {
+  try {
+    await $fetch(`/api/adoption-applications/${id}`, {
+      method: 'PUT',
+      body: { status }
+    });
+    alert('更新成功');
+    await loadApplications();
+    // 如果状态变为 completed，更新猫咪的 adoption_status
+    if (status === 'completed' && cat.value) {
+      await $fetch(`/api/cats/${cat.value.id}`, {
+        method: 'PUT',
+        body: { adoption_status: '已领养' }
+      });
+      await loadCat();
+    }
+  } catch (error: any) {
+    alert(error.data?.message || '更新失败');
+  }
+};
+
+const deleteApplication = async (id: number) => {
+  if (!confirm('确定要删除该申请吗？')) return;
+  
+  try {
+    await $fetch(`/api/adoption-applications/${id}`, {
+      method: 'DELETE'
+    });
+    alert('删除成功');
+    await loadApplications();
+  } catch (error: any) {
+    alert(error.data?.message || '删除失败');
+  }
+};
+
+const getStatusText = (status: string) => {
+  const statusMap: Record<string, string> = {
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝',
+    completed: '已完成'
+  };
+  return statusMap[status] || status;
+};
+
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('zh-CN');
 };
 
 const deleteCat = async () => {
@@ -267,58 +393,8 @@ const goToEdit = () => {
   }
 };
 
-// 打开高德地图导航
-const openGaodeNavigation = () => {
-  if (!cat.value?.adopter_location) {
-    alert('没有位置信息');
-    return;
-  }
-
-  // 解析坐标：格式为 "纬度,经度"
-  const [lat, lon] = cat.value.adopter_location.split(',').map(Number);
-  
-  if (isNaN(lat) || isNaN(lon)) {
-    alert('位置坐标格式错误');
-    return;
-  }
-
-  // 目标位置名称（使用领养人地址或坐标）
-  const poiname = cat.value.adopter_address || `位置(${lat},${lon})`;
-
-  // 检测设备类型
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-  const isAndroid = /android/i.test(userAgent);
-
-  let navUrl = '';
-
-  if (isIOS) {
-    // iOS 使用 iosamap 协议
-    navUrl = `iosamap://navi?sourceApplication=猫咪救助系统&poiname=${encodeURIComponent(poiname)}&lat=${lat}&lon=${lon}&dev=0`;
-  } else if (isAndroid) {
-    // Android 使用 androidamap 协议
-    navUrl = `androidamap://navi?sourceApplication=猫咪救助系统&poiname=${encodeURIComponent(poiname)}&lat=${lat}&lon=${lon}&dev=0`;
-  } else {
-    // 其他设备使用通用协议
-    navUrl = `amapuri://route/plan?dlat=${lat}&dlon=${lon}&dname=${encodeURIComponent(poiname)}&dev=0&t=0`;
-  }
-
-  // 尝试打开高德地图
-  const link = document.createElement('a');
-  link.href = navUrl;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-
-  // 如果高德地图未安装，可以提示用户
-  setTimeout(() => {
-    // 这里可以添加检测逻辑，如果高德地图未安装，可以跳转到下载页面或使用网页版
-    // 暂时不处理，让用户自己处理
-  }, 500);
-};
-
-onMounted(() => {
+onMounted(async () => {
+  await loadUser();
   // 如果路径不包含 /edit，才加载数据
   if (!route.path.includes('/edit')) {
     loadCat();
