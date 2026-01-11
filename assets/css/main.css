@@ -1,0 +1,11 @@
+/* OpenLayers 样式 */
+@import 'ol/ol.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50;
+}
+

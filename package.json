@@ -1,0 +1,22 @@
+{
+  "name": "cat-rescue",
+  "version": "1.0.0",
+  "description": "猫咪救助信息管理系统",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev --host",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview --port 25783",
+    "start": "node .output/server/index.mjs",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "nuxt": "^3.8.0"
+  },
+  "dependencies": {
+    "@nuxtjs/tailwindcss": "^6.8.4",
+    "ol": "^10.7.0"
+  }
+}
