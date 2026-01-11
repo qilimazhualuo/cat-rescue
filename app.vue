@@ -1,10 +1,8 @@
 <template>
-  <div>
-    <AppMenu />
-    <NuxtPage />
-  </div>
+    <div>
+        <AppMenu />
+        <NuxtPage />
+    </div>
 </template>
 
-<script setup lang="ts">
-</script>
-
+<script setup lang="ts"></script>

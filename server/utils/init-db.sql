@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS units (
   name VARCHAR(100) NOT NULL UNIQUE,
   code VARCHAR(50),
   address VARCHAR(255),
+  location VARCHAR(100),
   contact_person VARCHAR(100),
   phone VARCHAR(20),
   email VARCHAR(100),
@@ -85,7 +86,6 @@ CREATE TABLE IF NOT EXISTS persons (
   address VARCHAR(255),
   unit_id INTEGER REFERENCES units(id) ON DELETE SET NULL,
   position VARCHAR(100),
-  status VARCHAR(20) DEFAULT 'active',
   notes TEXT,
   username VARCHAR(50) UNIQUE,
   password VARCHAR(255),
@@ -98,7 +98,6 @@ CREATE TABLE IF NOT EXISTS persons (
 
 CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name);
 CREATE INDEX IF NOT EXISTS idx_persons_unit_id ON persons(unit_id);
-CREATE INDEX IF NOT EXISTS idx_persons_status ON persons(status);
 CREATE INDEX IF NOT EXISTS idx_persons_created_at ON persons(created_at);
 CREATE INDEX IF NOT EXISTS idx_persons_username ON persons(username) WHERE username IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_persons_role_id ON persons(role_id);
@@ -147,7 +146,8 @@ CREATE TRIGGER update_roles_updated_at BEFORE UPDATE ON roles
 INSERT INTO pages (path, name, description) VALUES
   ('/cats', '猫咪管理', '猫咪救助信息管理'),
   ('/units', '单位管理', '单位信息管理'),
-  ('/persons', '人员管理', '人员信息管理')
+  ('/persons', '人员管理', '人员信息管理'),
+  ('/roles', '角色管理', '角色权限管理')
 ON CONFLICT (path) DO NOTHING;
 
 -- 插入默认角色
@@ -165,4 +165,12 @@ SELECT r.id, p.id
 FROM roles r, pages p
 WHERE r.name = 'admin'
 ON CONFLICT (role_id, page_id) DO NOTHING;
+
+-- 注意：默认管理员账户需要通过以下方式创建：
+-- 1. 运行 TypeScript 脚本: npx tsx server/utils/init-admin.ts
+-- 2. 或调用 API: POST /api/admin/init
+-- 默认管理员账户信息：
+--   用户名: admin
+--   密码: admin123
+--   请登录后立即修改密码！
 

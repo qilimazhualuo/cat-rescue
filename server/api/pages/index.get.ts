@@ -1,7 +1,6 @@
-import { getAllPages } from '~/server/utils/db';
+import { getAllPages } from '~/server/utils/db'
 
-export default defineEventHandler(async (event) => {
-  const pages = await getAllPages();
-  return pages;
-});
-
+export default defineEventHandler(async event => {
+    const pages = await getAllPages()
+    return pages
+})

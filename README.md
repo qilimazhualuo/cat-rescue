@@ -15,12 +15,14 @@
 ## 字段说明
 
 ### 基本信息
+
 - 宠物类别（猫/狗/其他）
 - 宠物名称
 - 性别（公/母/未知）
 - 年龄（月）
 
 ### 健康信息
+
 - 是否免疫
 - 免疫证明
 - 是否驱虫
@@ -28,6 +30,7 @@
 - 宠物照片（URL）
 
 ### 救助信息
+
 - 救助人姓名
 - 手机号
 - 救助日期
@@ -35,6 +38,7 @@
 - 救助过程（20-200字，必填）
 
 ### 安置信息
+
 - 宠物是否安置
 - 领养地点
 - 宠物现状
@@ -74,16 +78,19 @@ npm run preview
 打包完成后，可以使用以下方式启动：
 
 **方式1：使用 npm 脚本（推荐）**
+
 ```bash
 npm run start
 ```
 
 **方式2：直接运行 Node.js**
+
 ```bash
 node .output/server/index.mjs
 ```
 
 **方式3：使用环境变量设置端口**
+
 ```bash
 PORT=25783 node .output/server/index.mjs
 ```
@@ -93,6 +100,7 @@ PORT=25783 node .output/server/index.mjs
 ### 6. 使用 PM2 启动（推荐生产环境）
 
 **安装 PM2（如果未安装）**
+
 ```bash
 npm install -g pm2
 # 或
@@ -100,6 +108,7 @@ pnpm add -g pm2
 ```
 
 **启动应用**
+
 ```bash
 # 方式1：使用配置文件（推荐）
 pm2 start ecosystem.config.js
@@ -112,6 +121,7 @@ pm2 start npm --name cat-rescue -- start
 ```
 
 **常用 PM2 命令**
+
 ```bash
 # 查看应用状态
 pm2 status
@@ -137,6 +147,7 @@ pm2 startup
 
 **PM2 配置文件**
 项目已包含 `ecosystem.config.js` 配置文件，可以直接使用：
+
 ```bash
 pm2 start ecosystem.config.js
 ```
@@ -149,10 +160,13 @@ pm2 start ecosystem.config.js
 
 1. 确保已安装并运行 PostgreSQL 数据库
 2. 创建数据库：
+
 ```bash
 sudo -u postgres psql -c "CREATE DATABASE cat_rescue;"
 ```
+
 3. 初始化表结构（已自动创建，如需手动执行）：
+
 ```bash
 sudo -u postgres psql -d cat_rescue -f server/utils/init-db.sql
 ```
@@ -170,6 +184,7 @@ DB_PASSWORD=your_password
 ```
 
 默认配置（无需密码）：
+
 - 主机: localhost
 - 端口: 5432
 - 数据库: cat_rescue
@@ -196,24 +211,30 @@ cat-rescue/
 ## API 接口
 
 ### GET /api/cats
+
 获取猫咪列表
+
 - 查询参数：
-  - `page`: 页码（默认 1）
-  - `pageSize`: 每页数量（默认 20）
-  - `search`: 搜索关键词
-  - `category`: 类别筛选
-  - `is_placed`: 安置状态筛选
+    - `page`: 页码（默认 1）
+    - `pageSize`: 每页数量（默认 20）
+    - `search`: 搜索关键词
+    - `category`: 类别筛选
+    - `is_placed`: 安置状态筛选
 
 ### GET /api/cats/:id
+
 获取单个猫咪信息
 
 ### POST /api/cats
+
 创建新猫咪信息
 
 ### PUT /api/cats/:id
+
 更新猫咪信息
 
 ### DELETE /api/cats/:id
+
 删除猫咪信息
 
 ## 技术栈
@@ -240,4 +261,3 @@ cat-rescue/
 ## 许可证
 
 MIT
-
