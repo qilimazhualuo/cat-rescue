@@ -3,30 +3,20 @@
   "version": "1.0.0",
   "description": "猫咪救助信息管理系统",
   "private": true,
+  "workspaces": [
+    "app",
+    "server",
+    "common"
+  ],
   "scripts": {
-    "dev": "nuxt dev --host",
-    "build": "nuxt build",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview --port 25783",
-    "start": "node .output/server/index.mjs",
-    "postinstall": "nuxt prepare"
+    "dev": "(cd app && bun dev) & (cd server && bun dev)",
+    "dev:app": "cd app && bun dev",
+    "dev:server": "cd server && bun dev",
+    "build": "cd app && bun build && cd ../server && bun build",
+    "build:app": "cd app && bun build",
+    "build:server": "cd server && bun build"
   },
   "devDependencies": {
-    "@nuxt/devtools": "latest",
-    "@types/bcryptjs": "^3.0.0",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/pg": "^8.16.0",
-    "nuxt": "^3.8.0"
-  },
-  "dependencies": {
-    "@nuxtjs/tailwindcss": "^6.8.4",
-    "@pinia/nuxt": "^0.11.3",
-    "bcryptjs": "^3.0.3",
-    "ioredis": "^5.3.2",
-    "jsonwebtoken": "^9.0.2",
-    "ol": "^10.7.0",
-    "pg": "^8.16.3",
-    "pinia": "^3.0.4",
-    "pinia-plugin-persistedstate": "^4.7.1"
+    "typescript": "^5.0.0"
   }
 }

@@ -96,7 +96,7 @@ PORT=25783 node .output/server/index.mjs
 ```bash
 npm install -g pm2
 # 或
-pnpm add -g pm2
+bun install -g pm2
 ```
 
 **启动应用**
